@@ -36,6 +36,8 @@ M.switch_from_hex = function(offset)
 	local offset = M.u_buf.get_text_offset(M.conf.xxd)
 	vim.cmd(cmd)
 	vim.bo.bin = false
+	local bufnum = vim.api.nvim_get_current_buf()
+	vim.bo.filetype = M.FTs[bufnum]
 	vim.cmd("goto " .. offset)
 end
 
@@ -45,6 +47,11 @@ M.switch_to_hex = function(offset)
 	vim.cmd(cmd)
 	vim.bo.bin = true
 	vim.api.nvim_win_set_cursor(0,{row,col})
+	local bufnum = vim.api.nvim_get_current_buf()
+
+	M.FTs[bufnum] = vim.bo.filetype
+	vim.bo.filetype="xxd"
+	print(vim.inspect(M.ft))
 	--M.hexmode.enter()
 end
 
@@ -65,6 +72,7 @@ M.setup = function(args)
 	
 	M.cur_offset = 0
 	M.in_hex = false
+	M.FTs = {}
 
 	M.u_xxd.config_sanity_check(M.conf.xxd)
 	vim.api.nvim_create_user_command('OxToggle', M.toggle, {})
