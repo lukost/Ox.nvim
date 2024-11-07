@@ -22,7 +22,7 @@ end
 
 M.get_cmd_params_to_text = function(config)
 	if (M.config_sanity_check(config) ~= 0) then
-		return " aa "
+		return ""
 	end
 	local ret = "%!" .. config.command .. " -r"
 	return ret

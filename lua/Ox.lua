@@ -2,9 +2,11 @@ local M={}
 local reloader = require('plenary.reload')
 M.u_buf = reloader.reload_module('Ox.bufutils')
 M.u_xxd = reloader.reload_module('Ox.xxdutils')
+M.u_xxd = reloader.reload_module('Ox')
+--reloader.reload_module('libmodal')
 M.u_buf = require('Ox.bufutils')
 M.u_xxd = require('Ox.xxdutils')
-
+--M.libmodal = require('libmodal')
 
 M.conf = {
 	view = {
@@ -21,31 +23,49 @@ M.conf = {
    	uppercase = "false",
    	addrlen = 8,
    },
+   keys = {
+		h = 'norm h',
+		j = 'norm j',
+		k = 'norm k',
+		l = 'norm l',
+   }
 }
 
+M.switch_from_hex = function(offset)
+	local cmd = M.u_xxd.get_cmd_params_to_text(M.conf.xxd)
+	local offset = M.u_buf.get_text_offset(M.conf.xxd)
+	vim.cmd(cmd)
+	vim.bo.bin = false
+	vim.cmd("goto " .. offset)
+end
+
+M.switch_to_hex = function(offset)
+	local cmd = M.u_xxd.get_cmd_params_to_hex(M.conf.xxd)
+	local row, col = unpack(M.u_buf.get_hex_position(offset, M.conf.xxd))
+	vim.cmd(cmd)
+	vim.bo.bin = true
+	vim.api.nvim_win_set_cursor(0,{row,col})
+	--M.hexmode.enter()
+end
+
 M.toggle = function()
-	local cmd = ""
-	local row = 1
-	local col = 0
 	local offset = M.u_buf.get_current_buf_offset()
 	if(M.in_hex) then
-		cmd = M.u_xxd.get_cmd_params_to_text(M.conf.xxd)
+		M.switch_from_hex(offset)
 		M.in_hex = false
-		vim.bo.bin = false
 	else
-		cmd = M.u_xxd.get_cmd_params_to_hex(M.conf.xxd)
-		row, col = unpack(M.u_buf.get_hex_position(offset, M.conf.xxd))
+		M.switch_to_hex(offset)
 		M.in_hex = true
-		vim.bo.bin = true
 	end
-	vim.cmd(cmd)
-	vim.api.nvim_win_set_cursor(0,{row,col})
 end
 
 M.setup = function(args)
+	M.conf = vim.tbl_deep_extend("force", M.conf, args or {})
+--	M.hexmode = M.libmodal.mode.new('HEX', {})
+	
 	M.cur_offset = 0
 	M.in_hex = false
-	M.conf = vim.tbl_deep_extend("force", M.conf, args or {})
+
 	M.u_xxd.config_sanity_check(M.conf.xxd)
 	vim.api.nvim_create_user_command('OxToggle', M.toggle, {})
 end
