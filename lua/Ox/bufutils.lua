@@ -34,14 +34,15 @@ end
 M.get_text_offset = function(config)
 	local r_col = 0
 	local r_row = 1
-   local line_length = 2* config.cols + config.cols/config.group
+   local line_length = 2* config.cols + (2*config.cols)/config.group
    local c_row, c_col = unpack(vim.api.nvim_win_get_cursor(0))
    local bIsInHex = (c_col >= (config.addrlen + 2)) and ((c_col - config.addrlen+2) < line_length)
    local current_line = (vim.fn.line("."))
 	r_row = r_row + (current_line - 1) * config.cols 
    if (bIsInHex) then
-		c_col = c_col - config.addrlen - 2
-		r_col = math.floor((c_col - math.floor(c_col/config.group)) / 2 ) 
+		c_col = c_col - config.addrlen - 1 -- -2 for ": " + 1 for base-0
+		r_col = c_col - math.floor( c_col / (2 * config.group) ) --remove trailing spaces
+		r_col = math.floor((r_col)/ 2) -- return to base-0
 	else
 		if(c_col < (config.addrlen + 2)) then
 			r_col = 0

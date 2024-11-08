@@ -51,8 +51,6 @@ M.switch_to_hex = function(offset)
 
 	M.FTs[bufnum] = vim.bo.filetype
 	vim.bo.filetype="xxd"
-	print(vim.inspect(M.ft))
-	--M.hexmode.enter()
 end
 
 M.toggle = function()
