@@ -45,7 +45,6 @@ M.switch_to_hex = function(offset)
 	local cmd = M.u_xxd.get_cmd_params_to_hex(M.conf.xxd)
 	local row, col = unpack(M.u_buf.get_hex_position(offset, M.conf.xxd))
 	vim.cmd(cmd)
-	vim.bo.bin = true
 	vim.api.nvim_win_set_cursor(0,{row,col})
 	local bufnum = vim.api.nvim_get_current_buf()
 
@@ -55,12 +54,13 @@ end
 
 M.toggle = function()
 	local offset = M.u_buf.get_current_buf_offset()
-	if(M.in_hex) then
+	local bufnum = vim.api.nvim_get_current_buf()
+	if(M.in_hex[bufnum]) then
 		M.switch_from_hex(offset)
-		M.in_hex = false
+		M.in_hex[bufnum] = false
 	else
 		M.switch_to_hex(offset)
-		M.in_hex = true
+		M.in_hex[bufnum] = true
 	end
 end
 
@@ -69,7 +69,7 @@ M.setup = function(args)
 --	M.hexmode = M.libmodal.mode.new('HEX', {})
 	
 	M.cur_offset = 0
-	M.in_hex = false
+	M.in_hex = {} 
 	M.FTs = {}
 
 	M.u_xxd.config_sanity_check(M.conf.xxd)
