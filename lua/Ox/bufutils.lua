@@ -23,11 +23,31 @@ end
 
 -- gets target PREVIEW cursor position for given byte offset and xxd config
 -- returns: {row, column}
-M.get_hex_preview_position = function(offset, config)
-	local offset_row = math.floor(offset/config.cols)
-	local ofc = offset%config.cols
-	local offset_col = ofc+config.addrlen + 2 + config.cols*2 + math.floor(config.cols/config.group) + 2
-	return {offset_row, offset_col}
+M.get_hex_preview_position = function(col, config)
+	local group_size = config.group
+	local cols = config.cols
+	local addr_offset = config.addrlen + 2
+
+	local hex_start = addr_offset 
+	local hex_width = (cols*2)+(cols/group_size)-1
+	local hex_end = hex_start + hex_width
+	
+	if (col < hex_start) or (col > hex_end) then
+		return -1
+	end
+	
+	local offed = col - hex_start
+	-- first calculate which group the cursor is in, 1-based
+	local group_no = math.floor((offed)/(2*group_size+1)) + 1 
+	-- next identify which character within the group the cursor is on
+	local ccol = (offed - (group_no - 1)*(2*group_size+1))
+	
+	if (ccol >= group_size*2) then
+		return -1
+	end
+
+	ccol = math.floor(ccol/2) + group_no*group_size + hex_end
+	return (ccol)
 end
 
 -- gets target byte offset of cursor position for given offset (in hex view) and xxd config 
@@ -38,7 +58,7 @@ M.get_text_offset = function(config)
 	local row, col = cursor[1] - 1, cursor[2]
 
 	-- Address column width in xxd mode
-	local hex_start = addr_offset + 1
+	local hex_start = addr_offset
 	local hex_width = (cols * 2) + (cols / group_size) - 1
 	local hex_end = hex_start + hex_width
 
@@ -49,13 +69,13 @@ M.get_text_offset = function(config)
 	if col > hex_end then
 		return row * cols + col
 	end
-
-	-- Compute byte index within the row
-	local byte_index = (col - hex_start) - math.floor((col - hex_start) / (2 * group_size + 1))
-	byte_index = math.floor(byte_index / 2)  -- Convert hex position to byte index
-
-	local global_offset = (row * cols) + byte_index + 1
-	return global_offset
+	
+	local offed = col - hex_start
+	local group_no = math.floor((offed)/(2*group_size+1)) + 1 
+	local ccol = (offed - (group_no - 1)*(2*group_size+1))
+	
+	local global_offset = (row * cols) + group_no*group_size + math.floor(ccol/2)
+	return global_offset - 1 
 end
 
 return M

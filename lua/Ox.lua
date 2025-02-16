@@ -5,8 +5,8 @@ M.u_xxd = reloader.reload_module('Ox')
 M.u_buf = reloader.reload_module('Ox.bufutils')
 M.u_xxd = reloader.reload_module('Ox.xxdutils')
 M.u_hig = reloader.reload_module('Ox.highlighter')
-M.u_hig = require('Ox.highlighter')
 M.u_buf = require('Ox.bufutils')
+M.u_hig = require('Ox.highlighter')
 M.u_xxd = require('Ox.xxdutils')
 
 -- NOTE: This could create some issues with multiple buffers switching
