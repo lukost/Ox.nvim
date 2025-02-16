@@ -1,35 +1,43 @@
--- Function to highlight a character at (x2, y2)
-local function highlight_char_at(x2, y2)
-    -- Clear any existing highlights in the namespace
-    local ns_id = vim.api.nvim_create_namespace('single_char_highlight')
-    vim.api.nvim_buf_clear_namespace(0, ns_id, 0, -1)
+local M = {}
 
-    -- Get the line at x2, which is the row
-    local line = vim.api.nvim_buf_get_lines(0, x2 - 1, x2, false)[1]
-    if line and y2 <= #line then
-        -- Highlight the character at (x2, y2)
-        vim.api.nvim_buf_add_highlight(0, ns_id, 'Visual', x2 - 1, y2 - 1, y2)
-    end
+-- Function to update highlight based on cursor position
+M.update_highlight = function(bufnum)
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local row, col = cursor[1] - 1, cursor[2] -- Convert to 0-based index
+	local config = M.config[bufnum]
+	local group_size = config.group
+	local cols = config.cols
+	local addr_offset = config.addrlen + 2
+
+	local hex_start = addr_offset + 1
+	local hex_width = (cols*2)+(cols/group_size)-1
+	local hex_end = hex_start + hex_width
+	
+	local preview_start = hex_end + 1
+
+	if (col < hex_start) or (col > hex_end) then
+		vim.api.nvim_buf_clear_namespace(bufnum, M.h_ns, 0, -1)
+		return
+	end
+
+	local byte_index = (col - hex_start) - math.floor((col - hex_start) / (2 * group_size + 1))
+	local char_col = preview_start + math.floor(byte_index / 2)
+
+	-- Clear previous highlights and apply new one
+	vim.api.nvim_buf_clear_namespace(bufnum, M.h_ns, 0, -1)
+	vim.api.nvim_buf_add_highlight(bufnum, M.h_ns, "Cursor", row, char_col, char_col + 1)
 end
 
--- Function to calculate x2 and y2 and apply highlighting
-local function update_highlight()
-    local cursor_pos = vim.api.nvim_win_get_cursor(0)
-    local x1 = cursor_pos[1]
-    local y1 = cursor_pos[2] + 1 -- Adjust for 1-based indexing
-
-    -- Calculate x2 and y2
-    local x2 = 2 * x1
-    local y2 = y1
-
-    -- Highlight the character at (x2, y2)
-    highlight_char_at(x2, y2)
+-- Function to set up autocmd for cursor movement
+M.setupHighlighter = function(config, augroup, namespace)
+	M.config = config
+	M.augroup = augroup
+	M.h_ns = namespace
 end
 
--- Set up an autocommand to trigger on CursorMoved
-vim.api.nvim_exec([[
-  augroup HighlightSingleChar
-    autocmd!
-    autocmd CursorMoved * lua update_highlight()
-  augroup END
-]], false)
+-- Function to disable highlighter when exiting hex mode
+M.disableHighlighter = function()
+	vim.api.nvim_clear_autocmds({ group = M.augroup })
+	vim.api.nvim_buf_clear_namespace(0, M.h_ns, 0, -1)
+end
+return M
