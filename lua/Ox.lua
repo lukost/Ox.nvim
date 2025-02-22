@@ -5,8 +5,10 @@ M.u_xxd = reloader.reload_module('Ox')
 M.u_buf = reloader.reload_module('Ox.bufutils')
 M.u_xxd = reloader.reload_module('Ox.xxdutils')
 M.u_hig = reloader.reload_module('Ox.highlighter')
+M.u_sid = reloader.reload_module('Ox.sidebar2')
 M.u_buf = require('Ox.bufutils')
 M.u_hig = require('Ox.highlighter')
+M.u_sid = require('Ox.sidebar2')
 M.u_xxd = require('Ox.xxdutils')
 
 -- NOTE: This could create some issues with multiple buffers switching
@@ -75,6 +77,7 @@ end
 
 -- Function to switch from hex mode to normal mode
 M.switch_from_hex = function(offset)
+	M.u_sid.hide_sidebar()
 	M.disableHighlighter()
 	local cmd = M.u_xxd.get_cmd_params_to_text(M.conf.xxd)
 	local offset = M.u_buf.get_text_offset(M.conf.xxd)
@@ -104,6 +107,7 @@ M.switch_to_hex = function(offset)
 	M.state.Configs[bufnum].mode = 'xxd'
 	vim.bo.filetype="xxd"
 	M.initHighlighter(M.state.Configs)
+	M.u_sid.show_sidebar()
 end
 
 -- Function to toggle hex mode
