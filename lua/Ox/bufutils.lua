@@ -50,6 +50,45 @@ M.get_hex_preview_position = function(col, config)
 	return (ccol)
 end
 
+M.get_hex_cursor_substring = function(len, config)
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local row, col = cursor[1] - 1, cursor[2]
+    local line = vim.api.nvim_buf_get_lines(bufnum, row, row + 1, false)[1] or ""
+    if #line < 2 then return nil end
+
+	local group_size = config.group
+	local cols = config.cols
+	local addr_offset = config.addrlen + 2
+
+	local hex_start = addr_offset 
+	local hex_width = (cols*2)+(cols/group_size)-1
+	local hex_end = hex_start + hex_width
+	
+	if (col < hex_start) or (col > hex_end) then
+		return "00"
+	end
+
+	local offed = col - hex_start
+	-- first calculate which group the cursor is in, 1-based
+	local group_no = math.floor((offed)/(2*group_size+1)) + 1 
+	-- next identify which character within the group the cursor is on
+	local ccol = (offed - (group_no - 1)*(2*group_size+1))
+	
+	if (ccol >= group_size*2) then
+		return ""
+	end
+	
+	local function get_chars(cc)
+		res = ""
+		if (cc%2) then
+			res = ""
+		end
+	end
+
+
+	return (ccol)
+
+end
 -- gets target byte offset of cursor position for given offset (in hex view) and xxd config 
 M.get_text_offset = function(config)
 	local group_size, cols = config.group, config.cols

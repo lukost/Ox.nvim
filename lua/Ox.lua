@@ -5,8 +5,10 @@ M.u_xxd = reloader.reload_module('Ox')
 M.u_buf = reloader.reload_module('Ox.bufutils')
 M.u_xxd = reloader.reload_module('Ox.xxdutils')
 M.u_hig = reloader.reload_module('Ox.highlighter')
+M.u_sid = reloader.reload_module('Ox.sidebar2')
 M.u_buf = require('Ox.bufutils')
 M.u_hig = require('Ox.highlighter')
+M.u_sid = require('Ox.sidebar2')
 M.u_xxd = require('Ox.xxdutils')
 
 -- NOTE: This could create some issues with multiple buffers switching
@@ -49,21 +51,21 @@ M.setupKeymaps = function(config)
 	if (M.conf.keys.register ~= true) then
 		return
 	end
-	vim.api.nvim_set_keymap("n",M.conf.keys.map.toggle,":OxToggle<CR>", { noremap = true, silent = true })
+	vim.api.nvim_set_keymap("n", M.conf.keys.map.toggle, ":OxToggle<CR>", { noremap = true, silent = true })
 end
 
 -- Function to set up autocmd for cursor movement
 M.initHighlighter = function()
-	if( M.conf.view.highlight_cursor ~= true ) then
+	if (M.conf.view.highlight_cursor ~= true) then
 		return
 	end
 	vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
-	group = M.augroup,
-	buffer = 0,
-	callback = function()
-	  local bufnum = vim.api.nvim_get_current_buf()
-	  M.u_hig.update_highlight(bufnum)
-	end,
+		group = M.augroup,
+		buffer = 0,
+		callback = function()
+			local bufnum = vim.api.nvim_get_current_buf()
+			M.u_hig.update_highlight(bufnum)
+		end,
 	})
 end
 
@@ -75,6 +77,7 @@ end
 
 -- Function to switch from hex mode to normal mode
 M.switch_from_hex = function(offset)
+	M.u_sid.hide_sidebar()
 	M.disableHighlighter()
 	local cmd = M.u_xxd.get_cmd_params_to_text(M.conf.xxd)
 	local offset = M.u_buf.get_text_offset(M.conf.xxd)
@@ -93,7 +96,7 @@ M.switch_to_hex = function(offset)
 	local row, col = unpack(M.u_buf.get_hex_position(offset, M.conf.xxd))
 	vim.cmd(cmd)
 
-	vim.api.nvim_win_set_cursor(0,{row,col})
+	vim.api.nvim_win_set_cursor(0, { row, col })
 
 	local bufnum = vim.api.nvim_get_current_buf()
 	M.state.FTs[bufnum] = vim.bo.filetype
@@ -102,15 +105,16 @@ M.switch_to_hex = function(offset)
 	M.state.Configs[bufnum].cols = M.conf.xxd.cols
 	M.state.Configs[bufnum].addrlen = M.conf.xxd.addrlen
 	M.state.Configs[bufnum].mode = 'xxd'
-	vim.bo.filetype="xxd"
+	vim.bo.filetype = "xxd"
 	M.initHighlighter(M.state.Configs)
+	M.u_sid.show_sidebar()
 end
 
 -- Function to toggle hex mode
 M.toggle = function()
 	local offset = M.u_buf.get_current_buf_offset()
 	local bufnum = vim.api.nvim_get_current_buf()
-	if(M.in_hex[bufnum]) then
+	if (M.in_hex[bufnum]) then
 		M.switch_from_hex(offset)
 		M.in_hex[bufnum] = false
 	else
@@ -123,14 +127,14 @@ end
 M.setup = function(args)
 	M.conf = vim.tbl_deep_extend("force", M.conf, args or {})
 	M.cur_offset = 0
-	M.in_hex = {} 
+	M.in_hex = {}
 	M.FTs = {}
 
 	M.u_xxd.config_sanity_check(M.conf.xxd)
 	vim.api.nvim_create_user_command('OxToggle', M.toggle, {})
-	
+
 	M.setupKeymaps()
-	M.u_hig.setupHighlighter(M.state.Configs,M.augroup, M.highlight_ns)
+	M.u_hig.setupHighlighter(M.state.Configs, M.augroup, M.highlight_ns)
 end
 
 M.setup({})
