@@ -51,43 +51,51 @@ M.get_hex_preview_position = function(col, config)
 end
 
 M.get_hex_cursor_substring = function(len, config)
+	local bufnum = vim.api.nvim_get_current_buf()
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	local row, col = cursor[1] - 1, cursor[2]
-    local line = vim.api.nvim_buf_get_lines(bufnum, row, row + 1, false)[1] or ""
-    if #line < 2 then return nil end
+	local line = vim.api.nvim_buf_get_lines(bufnum, row, row + 1, false)[1] or ""
+	if #line < 2 then return nil end
 
 	local group_size = config.group
 	local cols = config.cols
 	local addr_offset = config.addrlen + 2
 
-	local hex_start = addr_offset 
-	local hex_width = (cols*2)+(cols/group_size)-1
+	local hex_start = addr_offset
+	local hex_width = (cols * 2) + (cols / group_size) - 1
 	local hex_end = hex_start + hex_width
-	
+
 	if (col < hex_start) or (col > hex_end) then
-		return "00"
+		return nil
 	end
 
 	local offed = col - hex_start
-	-- first calculate which group the cursor is in, 1-based
-	local group_no = math.floor((offed)/(2*group_size+1)) + 1 
-	-- next identify which character within the group the cursor is on
-	local ccol = (offed - (group_no - 1)*(2*group_size+1))
-	
-	if (ccol >= group_size*2) then
-		return ""
+	local group_no = math.floor(offed / (2 * group_size + 1)) + 1
+	local ccol = offed - (group_no - 1) * (2 * group_size + 1)
+
+	if ccol >= group_size * 2 then
+		return nil -- cursor is on the space between groups
 	end
-	
-	local function get_chars(cc)
-		res = ""
-		if (cc%2) then
-			res = ""
+
+	-- byte index within the line (0-based)
+	local byte_in_line = (group_no - 1) * group_size + math.floor(ccol / 2)
+
+	local result = ""
+	for i = 0, len - 1 do
+		local b = byte_in_line + i
+		if b >= cols then break end
+		local bg = math.floor(b / group_size)  -- group index (0-based)
+		local bb = b % group_size              -- byte index within group (0-based)
+		local byte_col = hex_start + bg * (2 * group_size + 1) + bb * 2 + 1  -- 1-based
+		local hex = line:sub(byte_col, byte_col + 1)
+		if #hex == 2 and tonumber(hex, 16) then
+			result = result .. hex
+		else
+			break
 		end
 	end
 
-
-	return (ccol)
-
+	return result ~= "" and result or nil
 end
 -- gets target byte offset of cursor position for given offset (in hex view) and xxd config 
 M.get_text_offset = function(config)
@@ -106,7 +114,7 @@ M.get_text_offset = function(config)
 		return row * cols
 	end
 	if col > hex_end then
-		return row * cols + col
+		return row * cols + cols - 1
 	end
 	
 	local offed = col - hex_start
