@@ -21,15 +21,21 @@ M.conf = {
 		keep_position = true, -- keep cursor position when switching from and to xxd
 		highlight_cursor = true, -- use preview highlight when in hex mode
 	},
-	xxd = { -- xxd configuration
-		command = 'xxd',
-		cols = 16,
-		group = 2,
-		binary = false,
-		EBCDIC = false,
-		endianness = "big",
-		uppercase = "false",
-		addrlen = 8,
+	conv = { -- hex convertion options
+		mode = 'lua' -- 'lua' or 'xxd'
+		tool = {
+			xxd = {
+				cols = 16, -- xxd's cols param
+				group = 2, -- xxd's groups param
+				addrlen = 8, -- number of digits in xxd's address column, adjust to match xxd on your system
+			},
+			lua = {
+				cols = 16, -- works like xxd's cols param
+				group = 2, -- works like xxd's groups param
+				addr_len = 8, -- number of address column digits to generate
+				addr_stat = true, -- show line offset in status column
+			},
+		},
 	},
 	keys = { -- keymappings
 		register = true, -- register basic keymaps
