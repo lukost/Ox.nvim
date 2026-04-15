@@ -4,7 +4,7 @@ local M={}
 
 M.config_sanity_check = function(config)
    if (config.cols%config.group>0) then
-      vim.notify("0x: Hex dump configuration problem: Cols is not divisible by group size!",WARN)
+      vim.notify("0x: Hex dump configuration problem: Cols is not divisible by group size!", vim.log.levels.WARN)
       return 1
    end
    return 0

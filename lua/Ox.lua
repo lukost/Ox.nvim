@@ -77,14 +77,15 @@ end
 
 -- Function to switch from hex mode to normal mode
 M.switch_from_hex = function(offset)
+	local bufnum = vim.api.nvim_get_current_buf()
+	local buf_config = M.state.Configs[bufnum]
 	M.u_sid.hide_sidebar()
 	M.disableHighlighter()
-	local cmd = M.u_xxd.get_cmd_params_to_text(M.conf.xxd)
-	local offset = M.u_buf.get_text_offset(M.conf.xxd)
+	local cmd = M.u_xxd.get_cmd_params_to_text(buf_config)
+	local offset = M.u_buf.get_text_offset(buf_config)
 	vim.cmd(cmd)
 
 	vim.bo.bin = false
-	local bufnum = vim.api.nvim_get_current_buf()
 	vim.bo.filetype = M.state.FTs[bufnum]
 	M.state.Configs[bufnum] = { mode='' }
 	vim.cmd("goto " .. offset)
@@ -92,22 +93,24 @@ end
 
 -- Function to switch from normal mode to hex mode
 M.switch_to_hex = function(offset)
+	local bufnum = vim.api.nvim_get_current_buf()
+	M.state.FTs[bufnum] = vim.bo.filetype
+	M.state.Configs[bufnum] = {
+		command = M.conf.xxd.command,
+		group   = M.conf.xxd.group,
+		cols    = M.conf.xxd.cols,
+		addrlen = M.conf.xxd.addrlen,
+		mode    = 'xxd',
+	}
+
 	local cmd = M.u_xxd.get_cmd_params_to_hex(M.conf.xxd)
 	local row, col = unpack(M.u_buf.get_hex_position(offset, M.conf.xxd))
 	vim.cmd(cmd)
 
 	vim.api.nvim_win_set_cursor(0, { row, col })
-
-	local bufnum = vim.api.nvim_get_current_buf()
-	M.state.FTs[bufnum] = vim.bo.filetype
-	M.state.Configs[bufnum] = {}
-	M.state.Configs[bufnum].group = M.conf.xxd.group
-	M.state.Configs[bufnum].cols = M.conf.xxd.cols
-	M.state.Configs[bufnum].addrlen = M.conf.xxd.addrlen
-	M.state.Configs[bufnum].mode = 'xxd'
 	vim.bo.filetype = "xxd"
 	M.initHighlighter(M.state.Configs)
-	M.u_sid.show_sidebar()
+	M.u_sid.show_sidebar(M.state.Configs[bufnum])
 end
 
 -- Function to toggle hex mode
@@ -128,7 +131,6 @@ M.setup = function(args)
 	M.conf = vim.tbl_deep_extend("force", M.conf, args or {})
 	M.cur_offset = 0
 	M.in_hex = {}
-	M.FTs = {}
 
 	M.u_xxd.config_sanity_check(M.conf.xxd)
 	vim.api.nvim_create_user_command('OxToggle', M.toggle, {})

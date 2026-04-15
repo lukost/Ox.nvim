@@ -1,68 +1,92 @@
 # Ox.nvim
 
-Ox.nvim is an enhanced hex edit mode for Neovim supporting interactive highlights, maintaining cursor position, and more.
+Enhanced hex/binary editing for Neovim. Wraps `xxd` to toggle any buffer between its raw content and a hex view, while keeping the cursor on the same byte, highlighting the ASCII preview column in real time, and showing a floating sidebar with signed integer interpretations at the cursor.
 
-## Overview
+## Features
 
-Ox.nvim provides an improved experience for editing binary files in Neovim by offering features such as interactive highlights and cursor position maintenance. It is designed to make hex editing more intuitive and efficient.
+- Toggle hex view on any buffer with `:OxToggle` or `<Leader>x`
+- Cursor lands on the correct byte when entering and exiting hex mode
+- Real-time highlight syncing between the hex column and the ASCII preview
+- Floating sidebar showing offset and INT8/INT16/INT32 (LE & BE, signed) at the cursor
+
+## Requirements
+
+- Neovim 0.9+
+- `xxd` (ships with Vim; available via most package managers)
+- [`plenary.nvim`](https://github.com/nvim-lua/plenary.nvim) (used for hot-reloading during development)
 
 ## Installation
 
-To install Ox.nvim, use your preferred plugin manager. Below are examples for [packer.nvim](https://github.com/wbthomason/packer.nvim) and [Lazy.nvim](https://github.com/folke/lazy.nvim):
-
-### Using packer.nvim
-
-```lua
-use 'lukost/Ox.nvim'
-```
-
-### Using Lazy.nvim
+Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  'lukost/Ox.nvim',
+  "lukost/Ox2.nvim",
+  dependencies = { "nvim-lua/plenary.nvim" },
   config = function()
-    require('ox').setup({
-      -- Configuration options
-    })
-  end
+    require("Ox").setup()
+  end,
 }
 ```
 
 ## Usage
 
-To start using Ox.nvim, you need to set it up in your Neovim configuration file. Below is an example of how to configure and use the plugin:
+| Command | Default key | Action |
+|---|---|---|
+| `:OxToggle` | `<Leader>x` | Toggle hex mode on the current buffer |
+
+Enter hex mode on any buffer — including binary files. Exit returns the buffer to its original content with the cursor restored to the same byte.
+
+## Configuration
+
+Pass a table to `setup()` to override defaults:
 
 ```lua
--- Example usage
-require('ox').setup({
+require("Ox").setup({
   view = {
-    keep_position = true, -- keep cursor position when switching from and to xxd
-    highlight_cursor = true, -- use preview highlight when in hex mode
+    keep_position   = true,   -- restore cursor byte position on toggle
+    highlight_cursor = true,  -- highlight ASCII preview column at cursor
   },
-  xxd = { -- xxd configuration
-    command = 'xxd',
-    cols = 16,
-    group = 2,
-    addrlen = 8,
+  xxd = {
+    command  = "xxd",  -- xxd binary
+    cols     = 16,     -- bytes per row
+    group    = 2,      -- bytes per hex group
+    addrlen  = 8,      -- address column width (hex digits)
+    binary   = false,
+    EBCDIC   = false,
+    endianness = "big",
+    uppercase  = false,
   },
-  keys = { -- keymappings
-    register = true, -- register basic keymaps
+  keys = {
+    register = true,  -- register default keymap
     map = {
       toggle = "<Leader>x",
     },
-  }
+  },
 })
 ```
 
-### Commands
+## Sidebar
 
-- `:OxToggle` - Toggle hex edit mode.
+When hex mode is active a floating window appears in the top-right corner showing:
 
-## Contributing
+```
+Offset: 0x1A4
+INT8:    -92
+INT16 BE:-23552
+INT16 LE: 256
+INT32 BE:-1526726656
+INT32 LE: 16973824
+```
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub if you have suggestions or improvements.
+Values update on every cursor move. The sidebar closes automatically when hex mode is exited.
 
-## License
+## Development
 
-MIT License. See [LICENSE](./LICENSE) for more information.
+Hot-reload during development by re-sourcing the entry point inside Neovim:
+
+```
+:luafile lua/Ox.lua
+```
+
+`plenary.nvim` must be available in the Neovim instance. There is no build step or test suite.
