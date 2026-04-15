@@ -96,6 +96,7 @@ M.switch_to_hex = function(offset)
 	local bufnum = vim.api.nvim_get_current_buf()
 	M.state.FTs[bufnum] = vim.bo.filetype
 	M.state.Configs[bufnum] = {
+		command = M.conf.xxd.command,
 		group   = M.conf.xxd.group,
 		cols    = M.conf.xxd.cols,
 		addrlen = M.conf.xxd.addrlen,

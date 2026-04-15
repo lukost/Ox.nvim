@@ -45,7 +45,7 @@ local function get_cursor_values(bufnum)
         if signed then
             local msb = little_endian and bytes[#bytes] or bytes[1]
             if msb and msb >= 0x80 then
-                value = value - (1 << (#bytes * 8))
+                value = value - bit.lshift(1, #bytes * 8)
             end
         end
         return value
